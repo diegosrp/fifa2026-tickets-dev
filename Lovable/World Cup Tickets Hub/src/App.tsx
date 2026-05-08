@@ -1,3 +1,5 @@
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,33 +9,53 @@ import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
 import Index from "./pages/Index";
-import Matches from "./pages/Matches";
-import MatchDetail from "./pages/MatchDetail";
-import Stadiums from "./pages/Stadiums";
-import StadiumDetail from "./pages/StadiumDetail";
-import Teams from "./pages/Teams";
-import TeamDetail from "./pages/TeamDetail";
-import Groups from "./pages/Groups";
-import Standings from "./pages/Standings";
-import Quiz from "./pages/Quiz";
-import Qualified from "./pages/Qualified";
-import Cart from "./pages/Cart";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Checkout from "./pages/Checkout";
-import PaymentConfirmation from "./pages/PaymentConfirmation";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
 
-// Admin pages
-import AdminLayout from "./pages/admin/AdminLayout";
-import Dashboard from "./pages/admin/Dashboard";
-import AdminMatches from "./pages/admin/AdminMatches";
-import AdminStadiums from "./pages/admin/AdminStadiums";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminSales from "./pages/admin/AdminSales";
+// Páginas públicas mais leves: lazy para reduzir bundle inicial.
+const Matches = lazy(() => import("./pages/Matches"));
+const MatchDetail = lazy(() => import("./pages/MatchDetail"));
+const Stadiums = lazy(() => import("./pages/Stadiums"));
+const StadiumDetail = lazy(() => import("./pages/StadiumDetail"));
+const Teams = lazy(() => import("./pages/Teams"));
+const TeamDetail = lazy(() => import("./pages/TeamDetail"));
+const Groups = lazy(() => import("./pages/Groups"));
+const Standings = lazy(() => import("./pages/Standings"));
+const Quiz = lazy(() => import("./pages/Quiz"));
+const Qualified = lazy(() => import("./pages/Qualified"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const PaymentConfirmation = lazy(() => import("./pages/PaymentConfirmation"));
+const Profile = lazy(() => import("./pages/Profile"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+// Admin pages: bundle separado, só carrega para admins.
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
+const AdminMatches = lazy(() => import("./pages/admin/AdminMatches"));
+const AdminStadiums = lazy(() => import("./pages/admin/AdminStadiums"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminSales = lazy(() => import("./pages/admin/AdminSales"));
+
+// Defaults com cache mais agressivo: stadiums/teams quase não mudam,
+// matches mudam ocasionalmente. Evita refetch ao trocar de página
+// e ao voltar para uma aba já visitada.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,       // 5 min: dados considerados frescos
+      gcTime: 30 * 60 * 1000,         // 30 min: mantém no cache mesmo sem assinatura
+      refetchOnWindowFocus: false,    // não refetcha ao alternar de aba
+      retry: 1,                       // só 1 tentativa em vez de 3 padrão
+    },
+  },
+});
+
+const PageLoader = () => (
+  <div className="min-h-[60vh] flex items-center justify-center">
+    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -43,36 +65,38 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              {/* Admin Routes */}
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<Dashboard />} />
-                <Route path="matches" element={<AdminMatches />} />
-                <Route path="stadiums" element={<AdminStadiums />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="sales" element={<AdminSales />} />
-              </Route>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Admin Routes */}
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="matches" element={<AdminMatches />} />
+                  <Route path="stadiums" element={<AdminStadiums />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="sales" element={<AdminSales />} />
+                </Route>
 
-              {/* Public Routes */}
-              <Route path="/" element={<Layout><Index /></Layout>} />
-              <Route path="/matches" element={<Layout><Matches /></Layout>} />
-              <Route path="/matches/:id" element={<Layout><MatchDetail /></Layout>} />
-              <Route path="/stadiums" element={<Layout><Stadiums /></Layout>} />
-              <Route path="/stadiums/:id" element={<Layout><StadiumDetail /></Layout>} />
-              <Route path="/teams" element={<Layout><Teams /></Layout>} />
-              <Route path="/teams/:id" element={<Layout><TeamDetail /></Layout>} />
-              <Route path="/groups" element={<Layout><Groups /></Layout>} />
-              <Route path="/standings" element={<Layout><Standings /></Layout>} />
-              <Route path="/quiz" element={<Layout><Quiz /></Layout>} />
-              <Route path="/qualified" element={<Layout><Qualified /></Layout>} />
-              <Route path="/cart" element={<Layout><Cart /></Layout>} />
-              <Route path="/login" element={<Layout><Login /></Layout>} />
-              <Route path="/register" element={<Layout><Register /></Layout>} />
-              <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
-              <Route path="/payment-confirmation" element={<Layout><PaymentConfirmation /></Layout>} />
-              <Route path="/profile" element={<Layout><Profile /></Layout>} />
-              <Route path="*" element={<Layout><NotFound /></Layout>} />
-            </Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Layout><Index /></Layout>} />
+                <Route path="/matches" element={<Layout><Matches /></Layout>} />
+                <Route path="/matches/:id" element={<Layout><MatchDetail /></Layout>} />
+                <Route path="/stadiums" element={<Layout><Stadiums /></Layout>} />
+                <Route path="/stadiums/:id" element={<Layout><StadiumDetail /></Layout>} />
+                <Route path="/teams" element={<Layout><Teams /></Layout>} />
+                <Route path="/teams/:id" element={<Layout><TeamDetail /></Layout>} />
+                <Route path="/groups" element={<Layout><Groups /></Layout>} />
+                <Route path="/standings" element={<Layout><Standings /></Layout>} />
+                <Route path="/quiz" element={<Layout><Quiz /></Layout>} />
+                <Route path="/qualified" element={<Layout><Qualified /></Layout>} />
+                <Route path="/cart" element={<Layout><Cart /></Layout>} />
+                <Route path="/login" element={<Layout><Login /></Layout>} />
+                <Route path="/register" element={<Layout><Register /></Layout>} />
+                <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
+                <Route path="/payment-confirmation" element={<Layout><PaymentConfirmation /></Layout>} />
+                <Route path="/profile" element={<Layout><Profile /></Layout>} />
+                <Route path="*" element={<Layout><NotFound /></Layout>} />
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </CartProvider>
       </AuthProvider>
