@@ -281,7 +281,7 @@ A Function precisa de um Storage para estado interno (triggers, locks, logs do h
 >
 > # --- Descobre os nomes dos recursos existentes no RG ---
 > $loc     = az group show -n $rg --query location -o tsv
-> $plano   = az appservice plan list -g $rg --query "[?sku.tier=='Basic'][0].name" -o tsv
+> $plano   = az appservice plan list -g $rg --query "[0].name" -o tsv
 > $storage = az storage account list -g $rg --query "[0].name" -o tsv
 > $appi    = az resource list -g $rg --resource-type microsoft.insights/components --query "[0].name" -o tsv
 > $sql     = az sql server list -g $rg --query "[0].name" -o tsv
